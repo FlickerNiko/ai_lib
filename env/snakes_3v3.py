@@ -1,4 +1,4 @@
-from snakes import SnakeEatBeans
+from .snakes import SnakeEatBeans
 from copy import deepcopy
 
 class Snake3V3(SnakeEatBeans):
@@ -53,12 +53,11 @@ class Snake3V3(SnakeEatBeans):
                     if snake_position[x][y] != -1:
                         if j == 0:  # 撞头
                             re_generatelist[i] = 1
-
+                            self.info_after["hit"].append((snake_position[x][y], i))
                         compare_snake = self.players[snake_position[x][y]]
                         if [x, y] == compare_snake.segments[0]:  # 两头相撞
                             re_generatelist[snake_position[x][y]] = 1
-
-                        self.info_after["hit"].append((snake_position[x][y], i))
+                            self.info_after["hit"].append((i, snake_position[x][y]))
                     else:
                         snake_position[x][y] = i
 
@@ -125,7 +124,7 @@ class Snake3V3(SnakeEatBeans):
 
             avg_reward = reward_team[team_id] / n_team_players
 
-            r[i] = reward_individual + avg_reward
+            r[i] = reward_individual[i] + avg_reward
             self.n_return[i] += r[i]
 
 
@@ -149,6 +148,6 @@ class Snake3V3(SnakeEatBeans):
 
         board_state, info_after = self.get_next_state(joint_action)
         done = self.is_terminal()
-        reward = self.get_reward(joint_action)
+        reward = self.get_reward()
 
         return board_state, reward, done, info_after
