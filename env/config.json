@@ -106,7 +106,7 @@
     "obs_type": ["dict","dict"]
   },
   "snakes_3v3": {
-    "class_literal": "SnakeEatBeans",
+    "class_literal": "Snake3V3",
     "n_player": 6,
     "board_width": 20,
     "board_height": 10,

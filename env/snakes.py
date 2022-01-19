@@ -385,7 +385,7 @@ class SnakeEatBeans(GridGame, GridObservation, DictObservation):
     def _render_board(state, board, colors, unit, fix, extra_info):
         im = GridGame._render_board(state, board, colors, unit, fix)
         draw = ImageDraw.Draw(im)
-        fnt = ImageFont.truetype("Courier.dfont", 16)
+        fnt = ImageFont.truetype("msyh", 16)
         for i, pos in zip(count(1), extra_info):
             x, y = pos
             draw.text(((y + 1 / 4) * unit, (x + 1 / 4) * unit),

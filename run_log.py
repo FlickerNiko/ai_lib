@@ -126,9 +126,8 @@ def render_game(g, fps=1):
         game_info[step] = {}
         game_info[step]["time"] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         joint_act = get_joint_action_eval(g, multi_part_agent_ids, policy_list, actions_space, all_observes)
-        next_state, reward, done, info_before, info_after = g.step(joint_act)
-        if info_before:
-            game_info[step]["info_before"] = info_before
+        next_state, reward, done, info_after = g.step(joint_act)
+        
         game_info[step]["joint_action"] = str(joint_act)
 
         pygame.surfarray.blit_array(screen, g.render_board().transpose(1, 0, 2))
@@ -200,14 +199,13 @@ def run_game(g, env_name, multi_part_agent_ids, actions_spaces, policy_list, ren
 
         info_dict = {"time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}
         joint_act = get_joint_action_eval(g, multi_part_agent_ids, policy_list, actions_spaces, all_observes)
-        all_observes, reward, done, info_before, info_after = g.step(joint_act)
+        state, reward, done, info_after = g.step(joint_act)
         if render_mode:
             if hasattr(g, "render") and g.game_name == 'logistics_transportation':
                 g.render()
         if env_name.split("-")[0] in ["magent"]:
             info_dict["joint_action"] = g.decode(joint_act)
-        if info_before:
-            info_dict["info_before"] = info_before
+        
         info_dict["reward"] = reward
         if info_after:
             info_dict["info_after"] = info_after
@@ -252,13 +250,13 @@ if __name__ == "__main__":
     # "ParticleEnv-simple_push-continuous", "ParticleEnv-simple_reference-continuous",
     # "ParticleEnv-simple_speaker_listener-continuous", "ParticleEnv-simple_spread-continuous",
     # "ParticleEnv-simple_tag-continuous", "ParticleEnv-simple_world_comm-continuous", "olympics-curling"
-    env_type = "olympics-curling"
+    env_type = "snakes_3v3"
     game = make(env_type)
 
     # 针对"classic_"环境，使用gym core 进行render;
     # gridgame类环境（"gobang_1v1", "reversi_1v1", "snakes_1v1", "sokoban_2p", "snakes_3v3",
     # "snakes_5p", "sokoban_1p", "cliffwalking"），使用replay工具包的replay.html，通过上传.json进行网页回放
-    render_mode = False
+    render_mode = True
 
     # gridgame类环境支持实时render（"gobang_1v1", "reversi_1v1", "snakes_1v1", "sokoban_2p", "snakes_3v3",
     # "snakes_5p", "sokoban_1p", "cliffwalking"）
