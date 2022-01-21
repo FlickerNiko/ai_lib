@@ -23,10 +23,11 @@ class ReplayBuffer:
 
     
     def sample(self, n_batch):
-                
-        indices = np.random.randint(self.n_sample, (n_batch,))
-        indices += self.st_idx
-        indices %= self.buffer_size
+        
+        indices = np.random.randint((self.n_sample, self.gae_length), size = (n_batch,2))
+        # indices = np.random.randint(self.n_sample, (n_batch,))
+        indices[:,0] += self.st_idx
+        indices[:,0] %= self.buffer_size
         
         batch = {}
         for item_name in self._buffer:

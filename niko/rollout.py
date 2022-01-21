@@ -1,5 +1,7 @@
 
 import numpy as np
+from .replay_buffer import ReplayBuffer
+
 
 class Rollout:
     def __init__(self, env, agent, replay_buffer, config) -> None:
@@ -29,13 +31,13 @@ class Rollout:
     
     def create_gae_buffer(self):
         buffer = {}
-        gae_shape = (self.gae_length)
+        gae_shape = (self.gae_length,)
         buffer['gae'] = np.zeros(shape = gae_shape)
         buffer['logit'] = np.zeros(shape = gae_shape)
-        buffer['done'] = np.zeros(shape = gae_shape)
+        buffer['done'] = np.zeros(shape = gae_shape, dtype = np.bool8)
         buffer['reward'] = np.zeros(shape = gae_shape)
         buffer['value'] = np.zeros(shape = gae_shape)
-        buffer['action'] = np.zeros(shape = gae_shape)  
+        buffer['action'] = np.zeros(shape = gae_shape, dtype = np.int32)  
         
         for state_name in self.env.state_proto:
             state_shape = self.env.state_proto[state_name]
@@ -60,9 +62,7 @@ class Rollout:
             gae_step = 0
             state = self.env.reset()
             done = False
-            
-            
-
+                    
             while not done:
                 
                 logits, value = self.agent.predict(state)
@@ -87,5 +87,61 @@ class Rollout:
                     self.replay_buffer.push(gae_buffer)
                     gae_step = 0
                     self.reset_gae_buffer(gae_buffer)
-                    
-            
+
+
+class TestEnv:
+
+    def __init__(self) -> None:
+        self.state_proto = {
+            'main': (12,4),
+            'scalar': (32,)
+        }
+        self.state_shapes = self.state_proto
+
+    def reset(self):
+        pass
+
+    def step(self, action):
+        
+        state = {key : np.random.random(size = self.state_proto[key]) for key in self.state_proto}        
+        reward = np.random.random()
+        done = False
+        info = None
+
+        return state, reward, done, info
+
+
+class TestAgent:
+
+    def __init__(self) -> None:
+        self.action_shapes = None
+
+    def predict(self):
+        logits = np.random.random((4,))
+        value = np.random.random()
+        return logits, value
+
+class TestConfig:
+    def __init__(self) -> None:
+        self.gamma = 0.99
+        self.Lambda = 0.95
+
+agent = TestAgent()
+env = TestEnv()
+
+buffer_shape = {
+    'action': (),
+    'logits': (4,),
+    'reward': (),
+    'value': (),
+    'done' : (),
+    'gae': (),
+    'main': (12, 4),
+    'second': (32,)
+}
+
+replay_buffer = ReplayBuffer((128,32), buffer_shape)
+config  = TestConfig()
+rollout = Rollout(env, agent,replay_buffer, config)
+rollout.rollout(128, 256)
+
