@@ -19,8 +19,7 @@ class ReplayBuffer:
         self._buffer = {}
         for item_name in shape:
             full_shape = size + shape[item_name]
-            self._buffer[item_name] = np.zeros(full_shape)
-
+            self._buffer[item_name] = np.zeros(full_shape)        
     
     def sample(self, n_batch):
         
@@ -36,8 +35,7 @@ class ReplayBuffer:
         return batch
 
     def push(self, data):
-        
-        
+                
         insert_idx =  (self.st_idx + self.n_sample) % self.buffer_size            
         for item_name in data:
             self._buffer[item_name][insert_idx] = data[item_name]
@@ -47,7 +45,7 @@ class ReplayBuffer:
         else:
             self.st_idx += 1
             self.st_idx %= self.buffer_size
-
+    
 
         
     
