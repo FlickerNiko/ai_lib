@@ -7,7 +7,7 @@ class Rollout:
     def __init__(self, env, agent, replay_buffer, config) -> None:
         self.env = env
         self.agent = agent
-        self.replay_buffer = replay_buffer        
+        self.replay_buffer = replay_buffer
         self.gae_length = self.replay_buffer.gae_length
         self.config = config
 
@@ -16,7 +16,7 @@ class Rollout:
         rewards = gae_buffer['reward']
         values = gae_buffer['value']
         gae = gae_buffer['gae']
-                
+
         gamma = self.config.gamma
         Lambda = self.config.Lambda
         # todo: value_last for gae
@@ -27,8 +27,8 @@ class Rollout:
             advantage = rewards[i] + gamma * values[i+1] - values[i]
             gae[i] = advantage + (gamma * Lambda) * gae[i+1]
             i -= 1
-    
-    
+
+
     def create_gae_buffer(self):
         buffer = {}
         gae_shape = (self.gae_length,)
@@ -37,48 +37,55 @@ class Rollout:
         buffer['done'] = np.zeros(shape = gae_shape, dtype = np.bool8)
         buffer['reward'] = np.zeros(shape = gae_shape)
         buffer['value'] = np.zeros(shape = gae_shape)
-        buffer['action'] = np.zeros(shape = gae_shape, dtype = np.int32)  
-        
+        buffer['action'] = np.zeros(shape = gae_shape, dtype = np.int32)
+
         for state_name in self.env.state_proto:
             state_shape = self.env.state_proto[state_name]
-            buffer[state_name] = np.zeros(shape = gae_shape + state_shape)            
+            buffer[state_name] = np.zeros(shape = gae_shape + state_shape)
+
+        return buffer
 
     def reset_gae_buffer(self, buffer):
 
         for item in buffer.values():
-            item.fill(0)      
+            item.fill(0)
             # item[:] = 0
             pass
-            
+
 
     def rollout(self, n_episode, n_step = None):
-                
-        
-        gae_buffer = self.create_gae_buffer()
 
+
+        gae_buffer = self.create_gae_buffer()
 
         for i in range(n_episode):
 
             gae_step = 0
             state = self.env.reset()
             done = False
-                    
+            step = 0
             while not done:
-                
+
                 logits, value = self.agent.predict(state)
-                action = logits.select()  # action: int index
-                state, done, reward, info = self.env.step(action)
+                # action = logits.select()  # action: int index
+                action = 0
+
+                state, reward, done, info = self.env.step(action)
                 for state_name in state:
                     gae_buffer[state_name][gae_step] = state[state_name]
-                
+
                 gae_buffer['action'][gae_step] = action
-                gae_buffer['logits'][gae_step] = logits[action]
+                gae_buffer['logit'][gae_step] = logits[action]
                 gae_buffer['reward'][gae_step] = reward
                 gae_buffer['value'][gae_step] = value
                 gae_buffer['done'][gae_step] = done
                 gae_buffer['gae'][gae_step] =  value
-                            
-                gae_step += 1
+                
+                gae_step += 1                
+                step += 1
+
+                if step >= n_step:
+                    done = True
 
                 if gae_step >= self.gae_length or done:
                     # gae submit
@@ -102,8 +109,8 @@ class TestEnv:
         pass
 
     def step(self, action):
-        
-        state = {key : np.random.random(size = self.state_proto[key]) for key in self.state_proto}        
+
+        state = {key : np.random.random(size = self.state_proto[key]) for key in self.state_proto}
         reward = np.random.random()
         done = False
         info = None
@@ -116,7 +123,7 @@ class TestAgent:
     def __init__(self) -> None:
         self.action_shapes = None
 
-    def predict(self):
+    def predict(self, state):
         logits = np.random.random((4,))
         value = np.random.random()
         return logits, value
@@ -126,22 +133,34 @@ class TestConfig:
         self.gamma = 0.99
         self.Lambda = 0.95
 
-agent = TestAgent()
-env = TestEnv()
 
-buffer_shape = {
-    'action': (),
-    'logits': (4,),
-    'reward': (),
-    'value': (),
-    'done' : (),
-    'gae': (),
-    'main': (12, 4),
-    'second': (32,)
-}
+if __name__ == '__main__':
 
-replay_buffer = ReplayBuffer((128,32), buffer_shape)
-config  = TestConfig()
-rollout = Rollout(env, agent,replay_buffer, config)
-rollout.rollout(128, 256)
+    agent = TestAgent()
+    env = TestEnv()
+
+    state_shape = env.state_shapes
+
+    buffer_shape = {
+        'action': (),
+        'logit': (),
+        'reward': (),
+        'value': (),
+        'done' : (),
+        'gae': ()
+    }
+
+    for state_key in state_shape:
+        buffer_shape[state_key] = state_shape[state_key]
+
+    buffer_size = 2048
+    gae_length = 32
+    n_episode  = 128
+    n_step = 256
+
+    replay_buffer = ReplayBuffer((buffer_size,gae_length), buffer_shape)
+    config  = TestConfig()
+    rollout = Rollout(env, agent,replay_buffer, config)
+    rollout.rollout(n_episode, n_step)
+    pass
 
