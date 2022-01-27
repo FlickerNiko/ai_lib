@@ -6,18 +6,20 @@ from torch.nn import functional
 
 class PPO:
 
-    def __init__(self, agent, optim, state_keys, config) -> None:
+    def __init__(self, agent, state_keys, config) -> None:
         self.agent = agent
-        self.agent_target = deepcopy(agent)
+        # self.agent_target = deepcopy(agent)
         self._config = config
         self.state_keys = state_keys
-        self.optim = optim
+        self.lr = config.lr
+        self.optim = torch.optim.Adam(agent.params, lr = self.lr)
+        self.eps = torch.tensor(config.eps)
         pass
 
 
     def get_state(self, data):
         state = {}
-        for state_key in  self.state_keys:
+        for state_key in self.state_keys:
             state[state_key] = data[state_key]
         return state
 
@@ -34,29 +36,28 @@ class PPO:
 
         gae = data['gae']
 
+        value = value.squeeze(-1)
+        loss_value = functional.mse_loss(value, gae)
 
-        loss_value = functional.mse_loss(value, gae)        
+        action = data['action']
 
-        action = data['action']        
-        
         logit = logits.gather(-1, action.unsqueeze(-1))[:,0]
-        
+
         logit_old = data['logit']
         ratio = logit/logit_old
         ratio_clip = torch.clip(ratio, 1 - epsilon, 1 + epsilon)
-        loss_action = torch.min(ratio * gae, ratio_clip * gae)
+        loss_action = torch.min(ratio * gae, ratio_clip * gae).mean()
 
 
-        loss_entropy = - torch.mean(torch.sum(logits * torch.log(logits), dim = -1))
+        loss_entropy = - torch.mean(torch.sum(logits * torch.log(logits + self.eps), dim = -1))
+        loss = loss_action + coef_value * loss_value + coef_entropy * loss_entropy        
+        # apply gradient
+        self.optim.zero_grad()
+        loss.backward()
+        self.optim.step()
 
-        loss = loss_action + coef_value * loss_value + coef_entropy * loss_entropy
+        return loss.detach()
 
-        return loss
-        
-        # apply gradient        
-        # self.optim.zero_grad()
-        # loss.backward()
-        # self.optim.step()
 
 
 

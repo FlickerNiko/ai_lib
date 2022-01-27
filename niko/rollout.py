@@ -62,7 +62,7 @@ class Rollout:
         return ret
 
     def data_for_buffer(self, data):
-        return data[0].numpy()
+        return data[0].detach().numpy()
         
 
     def rollout(self, n_episode, n_step = None):
@@ -104,7 +104,8 @@ class Rollout:
 
                 if gae_step >= self.gae_length or done:
                     # gae submit
-                    _, value_T = self.agent.predict(state)
+                    tensor_state = self.state_for_agent(state)
+                    _, value_T = self.agent.predict(tensor_state)
                     value_T = self.data_for_buffer(value_T)
                     self.compute_gae(gae_buffer, value_T, gae_step)
                     self.replay_buffer.push(gae_buffer)

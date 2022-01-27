@@ -1,9 +1,12 @@
+from turtle import forward
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from .replay_buffer import ReplayBuffer
 from .rollout import Rollout
 from .ppo import PPO
-
+from .learner import Learner
 
 class TestEnv:
 
@@ -34,19 +37,39 @@ class TestEnv:
 
         return state, reward, done, info
 
+class TestModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        hidden_dim = 32
+        self.fc1 = nn.Linear(80, hidden_dim)
+        self.fc_v = nn.Linear(hidden_dim, 1)
+        self.fc_a = nn.Linear(hidden_dim, 4)
+
+    def forward(self, main, scalar):
+        main = torch.reshape(main, (-1, 48))
+        input  = torch.concat((main, scalar), -1)
+        h = self.fc1(input)
+        v = self.fc_v(h)
+        a = F.softmax(self.fc_a(h), -1) 
+
+        return a, v
 
 class TestAgent:
 
     def __init__(self) -> None:
         self.action_shapes = None
+        self.model = TestModel()
+
+        self.params = self.model.parameters()
         
 
-
     def predict(self, state):
-        n_batch = list(state.values())[0].shape[0]        
-        logits = torch.rand((n_batch, 4))
-        value = torch.rand((n_batch,))
-        return logits, value
+        return self.model.forward(state['main'], state['scalar'])
+
+        # n_batch = list(state.values())[0].shape[0]
+        # logits = torch.rand((n_batch, 4))
+        # value = torch.rand((n_batch,))
+        # return logits, value
     
 
 class TestConfig:
@@ -56,6 +79,8 @@ class TestConfig:
         self.coef_value = 1.0
         self.coef_entropy = 0.01
         self.epsilon = 0.2
+        self.lr = 1e-4
+        self.eps = 1e-30
 
 
 
@@ -91,19 +116,23 @@ if __name__ == '__main__':
     rollout.rollout(n_episode, n_step)
     
 
-    ppo = PPO(agent, None, state_proto.keys(), config)
+    ppo = PPO(agent, state_proto.keys(), config)
 
     def to_torch(data):
         for key in data:
             data[key] = torch.from_numpy(data[key])
         return data
 
-    losses = []
 
-    for i in range(128):
-        samples = replay_buffer.sample(n_batch)
-        samples = to_torch(samples)
-        loss = ppo.train(samples)
-        losses.append(loss)
+    learner = Learner(replay_buffer, agent, ppo, config)
+    learner.train(n_batch, 128)
+
+    # losses = []
+
+    # for i in range(128):
+    #     samples = replay_buffer.sample(n_batch)
+    #     samples = to_torch(samples)
+    #     loss = ppo.train(samples)
+    #     losses.append(loss)
     
-    pass
+    # pass
