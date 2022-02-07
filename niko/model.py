@@ -30,14 +30,12 @@ class Model(nn.Module):
         a = self.fca(h)
         return a, v
 
-
 class TestConfig:
     def __init__(self) -> None:
         self.spatial_dim = 8
         self.scalar_dim = 32
         self.action_dim = 4
         
-
 if __name__ == '__main__':
     config = TestConfig()
     model = Model(config)
