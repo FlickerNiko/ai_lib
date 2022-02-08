@@ -1,16 +1,21 @@
 from .snakes import SnakeEatBeans
 from copy import deepcopy
+import numpy as np
 
 class Snake3V3(SnakeEatBeans):
     def __init__(self, conf):
         super().__init__(conf)
-    
-
+        
+        self.state_proto = {
+            'spatial': ((self.board_height, self.board_width), np.int64),
+            'heads_pos': ((self.n_player, 2), np.int64)
+        }        
+        
     def get_next_state(self, all_action):
         before_info = self.step_before_info()
-        not_valid = self.is_not_valid_action(all_action)
+        # not_valid = self.is_not_valid_action(all_action)
         self.snakes_before = deepcopy(self.players)
-        if not not_valid:
+        if True:
             # 各玩家行动
             # print("current_state", self.current_state)
             eat_snakes = [0] * self.n_player
@@ -24,7 +29,7 @@ class Snake3V3(SnakeEatBeans):
             # move and eat beans
             for i in range(self.n_player):
                 snake = self.players[i]
-                act = self.actions[all_action[i][0].index(1)]
+                act = self.actions[all_action[i]]
                 # print(snake.player_id, "此轮的动作为：", self.actions_name[act])
                 snake.change_direction(act)
                 snake.move_and_add(self.snakes_position)
@@ -81,7 +86,6 @@ class Snake3V3(SnakeEatBeans):
             # yanxue add
             # 更新状态
             self.generate_beans()
-
             next_state = self.update_state()
             self.current_state = next_state
             self.step_cnt += 1
@@ -96,7 +100,7 @@ class Snake3V3(SnakeEatBeans):
 
             self.all_observes = self.get_all_observes(before_info)
 
-            heads_pos = [snake[0] for snake in self.players]
+            heads_pos = [snake.segments[0] for snake in self.players]
             return self.current_state, heads_pos, self.info_after
     
     def get_reward(self):
@@ -148,4 +152,24 @@ class Snake3V3(SnakeEatBeans):
         done = self.is_terminal()
         reward = self.get_reward()
         
-        return board_state, heads_pos, reward, done, info_after
+        board_state = np.array(board_state, np.int64).squeeze(-1)
+        heads_pos = np.array(heads_pos, np.int64)
+        
+        data = {
+            'spatial': board_state,
+            'heads_pos': heads_pos
+        }
+
+        return data, reward, done, info_after
+
+    def reset(self):
+        super().reset()
+        heads_pos = [snake.segments[0] for snake in self.players]
+        board_state = self.current_state
+        board_state = np.array(board_state, np.int64).squeeze(-1)
+        heads_pos = np.array(heads_pos, np.int64)
+        data = {
+            'spatial': board_state,
+            'heads_pos': heads_pos
+        }
+        return data

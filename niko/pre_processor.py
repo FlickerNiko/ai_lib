@@ -20,8 +20,8 @@ class PreProcessor:
 
     def extend_spatial(self, spatial, heads_pos):
         # extend up, down, left, right
-        width = spatial.shape[1]
-        height = spatial.shape[2]
+        height = spatial.shape[1]
+        width = spatial.shape[2]        
         n_batch = spatial.shape[0]
         n_player = heads_pos.shape[1]
         spatial = torch.concat([spatial]*3, 1)
@@ -33,7 +33,7 @@ class PreProcessor:
         for b in range(n_batch):
             spatial_fp = []    #full player
             for p in range(n_player):
-                x, y = heads_pos[b, p]
+                y, x = heads_pos[b, p]
                 item = spatial[b,:, y+1:y+2*height, x+1:x+2*width]
                 spatial_fp.append(item)
             spatial_fp = torch.stack(spatial_fp, 0)
