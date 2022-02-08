@@ -96,8 +96,8 @@ class Snake3V3(SnakeEatBeans):
 
             self.all_observes = self.get_all_observes(before_info)
 
-
-            return self.current_state, self.info_after
+            heads_pos = [snake[0] for snake in self.players]
+            return self.current_state, heads_pos, self.info_after
     
     def get_reward(self):
         # todo: zero sum
@@ -112,9 +112,7 @@ class Snake3V3(SnakeEatBeans):
         reward_team[0] = -sum(reward_individual[self.n_player//2:])
 
         r = [0] * self.n_player
-
         n_team_players = self.n_player // 2
-
 
         for i in range(self.n_player):
             if i < n_team_players:
@@ -146,8 +144,8 @@ class Snake3V3(SnakeEatBeans):
     
     def step(self, joint_action):
 
-        board_state, info_after = self.get_next_state(joint_action)
+        board_state, heads_pos, info_after = self.get_next_state(joint_action)
         done = self.is_terminal()
         reward = self.get_reward()
-
-        return board_state, reward, done, info_after
+        
+        return board_state, heads_pos, reward, done, info_after

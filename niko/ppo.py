@@ -13,9 +13,7 @@ class PPO:
         self.state_keys = state_keys
         self.lr = config.lr
         self.optim = torch.optim.Adam(agent.params, lr = self.lr)
-        self.eps = torch.tensor(config.eps)
-        pass
-
+        self.eps = torch.tensor(config.eps)        
 
     def get_state(self, data):
         state = {}
