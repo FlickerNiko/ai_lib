@@ -27,7 +27,7 @@ class Model(nn.Module):
         h = torch.concat((hs, hc), -1)        
         h = F.relu(self.fc3(h))        
         v = self.fcv(h)
-        a = self.fca(h)
+        a = F.softmax(self.fca(h),-1)
         return a, v
 
 class TestConfig:
